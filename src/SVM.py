@@ -21,7 +21,9 @@ class SVM:
 
     # * multi-class SVM
     def one_vs_rest(self):
-        for i in range(self.class_dim):
+        print("Training one vs rest SVM...")
+
+        for i in tqdm(range(self.class_dim)):
             labels = self.labels.copy()
 
             # set the label of the i-th class to 1 and the others to -1
@@ -48,37 +50,50 @@ class SVM:
         else:
             raise ValueError("Invalid kernel type")
 
-    def one_vs_one(self, features, labels):
-        # initialize variables
-        alphas = cp.Variable(self.n_samples)
+    def one_vs_one(self, features, labels, C=1.0):
+        # Initialize variables
+        alphas = cp.Variable(self.n_samples)  # Lagrange multipliers
 
-        # kernel matrix
+        # Kernel matrix (linear kernel assumed here; can be replaced with others)
         K = self.kernel(features)
         Q = np.outer(labels, labels) * K
         Q += 1E-5 * np.eye(self.n_samples)
 
-        # objective function
-        objective = cp.Maximize(cp.sum(alphas) - 0.5 * cp.quad_form(alphas, Q))
-        # constraints
-        constraints = [alphas >= 0, labels @ alphas == 0]
+        # Objective function: maximize dual problem with slack penalties
+        objective = cp.Maximize(
+            cp.sum(alphas) - 0.5 * cp.quad_form(alphas, Q))
 
-        # solve the problem
+        # Constraints
+        constraints = [
+            alphas >= 0,                  # Alphas should be non-negative
+            alphas <= C,                  # Alphas should be bounded by C
+            labels @ alphas == 0,         # Equality constraint for alphas
+        ]
+
+        # Solve the problem
         problem = cp.Problem(objective, constraints)
         problem.solve()
 
-        # result
+        # Retrieve results
         alpha_values = alphas.value
         support_vector_indices = np.where(alpha_values > 1e-5)[0]
 
-        # calculate weights and bias
-        weights = np.sum(alpha_values[support_vector_indices]
-                         * labels[support_vector_indices, None]
-                         * features[support_vector_indices], axis=0)
+        # Compute weights and bias
+        weights = np.sum(alpha_values * labels * features.T, axis=1)
         bias = np.mean(labels[support_vector_indices]
                        - np.dot(features[support_vector_indices], weights))
 
         return weights, bias
 
+    # * evaluate
+    def predict(self, X):
+        return np.argmax([np.dot(X, self.weights[i]) + self.bias[i] for i in range(self.class_dim)], axis=0)
+
+    def evaluate(self, features, labels):
+        pred = self.predict(features)
+        return np.mean(pred == labels)
+
+    # * print info
     def print_info(self):
         print('features shape:', self.features.shape)
         print('labels shape:', self.labels.shape)
@@ -87,45 +102,26 @@ class SVM:
         print('kernel type:', self.kernel_type)
 
 
-def plot_data(X, y, w, b):
-
-    # plot data
-    plt.scatter(X[:, 0], X[:, 1], c=y)
-    # plot y = wx + b
-    x = np.linspace(0, 4, 100)
-    y = (-w[0] * x - b) / w[1]
-    plt.plot(x, y, '-r')
-
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.title('SVM Classification')
-    plt.show()
-
-
 if __name__ == '__main__':
 
-    # # get data
-    # train_file_path = 'datasets/train_feature.pkl'
-    # train_label_file_path = 'datasets/train_labels.npy'
-    # eval_file_path = 'datasets/test_feature.pkl'
+    # get data
+    train_file_path = 'datasets/train_feature.pkl'
+    train_label_file_path = 'datasets/train_labels.npy'
+    eval_file_path = 'datasets/test_feature.pkl'
 
-    # data_loader = DataLoader(
-    #     train_file_path,
-    #     train_label_file_path,
-    #     eval_file_path)
+    data_loader = DataLoader(
+        train_file_path,
+        train_label_file_path,
+        eval_file_path)
 
-    # # build SVM model
-    # svm = SVM(data_loader.train_features, data_loader.train_labels)
+    # build SVM model
+    svm = SVM(data_loader.test_features, data_loader.test_labels)
 
-    # svm.print_info()
-
-    X = np.array([[1.0, 3.0], [1.0, 1.0], [2.0, 3.0], [3.0, 4.0], [3.0, 2.0]])
-    y = np.array([1, 1, 0, 0, 0])
-
-    svm = SVM(X, y)
+    # train
     svm.one_vs_rest()
 
-    print(svm.weights)
-    print(svm.bias)
+    # evaluate
+    print("Train accuracy:", svm.evaluate(
+        data_loader.test_features, data_loader.test_labels))
 
-    plot_data(X, y, svm.weights[0], svm.bias[0])
+    svm.print_info()

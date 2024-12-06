@@ -1,0 +1,16 @@
+exp,train_acc,test_acc,eval_acc,model_path
+"PCA->1000, linear svm",0.931,0.933,,svm_model_20241206_084317.pkl
+"PCA->10000, rbf svm",0.976,0.977,,svm_model_20241206_134024.pkl
+"PCA->5000, rbf svm",0.976,0.976,,svm_model_20241206_125510.pkl
+"PCA->1000, rbf svm",0.968,0.969,,svm_model_20241206_085534.pkl
+"PCA->500, rbf svm",0.956,0.955,,svm_model_20241206_135921.pkl
+"PCA->100, rbf svm",0.883,0.883,,svm_model_20241206_140231.pkl
+"rbf KPCA->5000, rbf svm ",0.976,0.976,,svm_model_20241206_230237.pkl
+"rbf KPCA->1000, rbf svm",0.969,0.967,,svm_model_20241206_224053.pkl
+"rbf KPCA->500, rbf svm",0.956,0.955,,svm_model_20241206_152602.pkl
+"rbf KPCA->100, rbf svm",0.883,0.882,,svm_model_20241206_152500.pkl
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,

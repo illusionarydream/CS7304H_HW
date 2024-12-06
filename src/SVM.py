@@ -3,6 +3,9 @@ from tqdm import tqdm
 from cvxopt import matrix, solvers
 import multiprocessing
 from dataloader import DataLoader
+from datetime import datetime
+from sklearn import svm
+import pickle
 
 import matplotlib.pyplot as plt
 
@@ -60,7 +63,7 @@ class SVM:
         # get the kernel matrix
         K = self.kernel(features)
         P = matrix(np.outer(labels, labels) * K)
-        P = matrix(P + 1e-5 * np.eye(self.n_samples))
+        P = matrix(P + 1e-3 * np.eye(self.n_samples))
 
         q = matrix(-np.ones(self.n_samples))
 
@@ -74,7 +77,7 @@ class SVM:
         b = matrix(0.0)
 
         solution = solvers.qp(
-            P, q, G, h, A, b,  kktsolver='ldl', options={'kktreg': 1e-9})
+            P, q, G, h, A, b,  kktsolver='ldl', options={'kktreg': 1e-3})
         alphas = np.ravel(solution['x'])
 
         # get the support vectors
@@ -106,27 +109,101 @@ class SVM:
         print('kernel type:', self.kernel_type)
 
 
+# use sklearn SVM
+class SK_SVM:
+    def __init__(self, features, labels, kernel_type: str = "rbf"):
+        self.features = np.asarray(features)
+        self.labels = np.asarray(labels)
+        self.vector_dim = features.shape[1]
+        self.n_samples = features.shape[0]
+        self.class_dim = max(labels) + 1
+        self.kernel_type = kernel_type
+
+        # one vs rest
+        self.svm = svm.SVC(kernel=kernel_type)
+
+    # * multi-class SVM
+    def one_vs_rest(self):
+        print("Training one vs rest SVM...")
+        self.svm.fit(self.features, self.labels)
+
+    # * evaluate
+    def evaluate(self, features, labels):
+        features = np.asarray(features)
+        labels = np.asarray(labels)
+
+        pred = self.svm.predict(features)
+        return np.mean(pred == labels)
+
+    # * print info
+    def print_info(self):
+        print('features shape:', self.features.shape)
+        print('labels shape:', self.labels.shape)
+        print('vector dim:', self.vector_dim)
+        print('class dim:', self.class_dim)
+        print('kernel type:', self.kernel_type)
+
+    # * save model
+    def save_model(self, file_path):
+        with open(file_path, 'wb') as f:
+            pickle.dump(self.svm, f)
+        print(f"Model saved to {file_path}")
+
+    # * load model
+    def load_model(self, file_path):
+        with open(file_path, 'rb') as f:
+            self.svm = pickle.load(f)
+        print(f"Model loaded from {file_path}")
+
+
 if __name__ == '__main__':
 
     # get data
-    train_file_path = 'datasets/pca_train_feature.pkl'
+    train_file_path = 'datasets/kpca_train_feature_5000.pkl'
     train_label_file_path = 'datasets/train_labels.npy'
     eval_file_path = 'datasets/test_feature.pkl'
 
+    # data loader
     data_loader = DataLoader(
-        train_file_path,
-        train_label_file_path,
-        eval_file_path)
+        train_file_path, train_label_file_path, eval_file_path)
 
-    # build SVM model
-    svm = SVM(data_loader.train_features,
-              data_loader.train_labels, kernel_type='linear')
+    # iterate over the data
+    itrs = 5
+    train_acc = 0
+    test_acc = 0
 
-    # train
-    svm.one_vs_rest()
+    # store the best model
+    max_acc = 0
+    time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+    store_path = f"output/svm_model_{time_str}.pkl"
 
-    # evaluate
-    print("Train accuracy:", svm.evaluate(
-        data_loader.train_features, data_loader.train_labels))
+    svm = SK_SVM(data_loader.train_features, data_loader.train_labels)
 
-    svm.print_info()
+    for i in range(itrs):
+
+        print(f"iteration {i + 1}")
+
+        data_loader.random_split()
+
+        # train the model
+        svm.one_vs_rest()
+
+        # evaluate the model: train
+        temp_train_acc = svm.evaluate(
+            data_loader.train_features, data_loader.train_labels)
+        train_acc += temp_train_acc
+
+        # evaluate the model: test
+        temp_test_acc = svm.evaluate(
+            data_loader.test_features, data_loader.test_labels)
+        test_acc += temp_test_acc
+
+        print(f"train acc: {temp_train_acc}")
+        print(f"test acc: {temp_test_acc}")
+
+        if temp_test_acc > max_acc:
+            max_acc = temp_test_acc
+            svm.save_model(store_path)
+
+    print(f"average train acc: {train_acc / itrs}")
+    print(f"average test acc: {test_acc / itrs}")

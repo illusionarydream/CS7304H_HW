@@ -27,6 +27,8 @@ class DataLoader:
         self.origin_labels = self.origin_labels[indices]
 
     def random_split(self, split_ratio=0.2):
+        # random shuffle
+        self.random_shuffle()
         # split the training data into training and evaluation sets
         split_index = int(self.origin_features.shape[0] * (1 - split_ratio))
 

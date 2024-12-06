@@ -56,12 +56,17 @@ class PCA:
 
 # Example usage
 if __name__ == "__main__":
-    data = pickle.load(open("datasets/train_feature.pkl", "rb"))
+    data = pickle.load(open("datasets/pca_train_feature_500.pkl", "rb"))
 
-    pca = PCA(n_components=1000)
-    data_reduced = pca.fit_transform(data)
+    N_list = [100, 500, 1000, 5000]
 
-    print(data_reduced.shape)
+    for n_components in N_list:
+        pca = PCA(n_components=n_components)
+        data_reduced = pca.fit_transform(data)
 
-    # store the PCA reduced data
-    pickle.dump(data_reduced, open("datasets/pca_train_feature.pkl", "wb"))
+        # store the PCA reduced data
+        pickle.dump(data_reduced, open(
+            "datasets/pca_test_feature_{}.pkl".format(n_components), "wb"))
+
+        print(f"PCA reduced data shape (n_components={n_components}):",
+              data_reduced.shape)

@@ -6,6 +6,7 @@ from dataloader import DataLoader
 from datetime import datetime
 from sklearn import svm
 import pickle
+import pandas as pd
 
 import matplotlib.pyplot as plt
 
@@ -135,6 +136,11 @@ class SK_SVM:
         pred = self.svm.predict(features)
         return np.mean(pred == labels)
 
+    # * predict
+    def predict(self, features):
+        features = np.asarray(features)
+        return self.svm.predict(features)
+
     # * print info
     def print_info(self):
         print('features shape:', self.features.shape)
@@ -156,12 +162,12 @@ class SK_SVM:
         print(f"Model loaded from {file_path}")
 
 
-if __name__ == '__main__':
-
-    # get data
-    train_file_path = 'datasets/kpca_train_feature_5000.pkl'
-    train_label_file_path = 'datasets/train_labels.npy'
-    eval_file_path = 'datasets/test_feature.pkl'
+def process(train_file_path, train_label_file_path, eval_file_path,
+            train_acc_list, test_acc_list, file_name_list,
+            # more parameters
+            itrs=5,
+            if_save_pred=True,
+            if_save_model=True):
 
     # data loader
     data_loader = DataLoader(
@@ -175,7 +181,9 @@ if __name__ == '__main__':
     # store the best model
     max_acc = 0
     time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    store_path = f"output/svm_model_{time_str}.pkl"
+    father_dir = "output"
+    file_name = "svm_model_{}".format(time_str)
+    store_path = f"{father_dir}/{file_name}.pkl"
 
     svm = SK_SVM(data_loader.train_features, data_loader.train_labels)
 
@@ -203,7 +211,49 @@ if __name__ == '__main__':
 
         if temp_test_acc > max_acc:
             max_acc = temp_test_acc
-            svm.save_model(store_path)
+
+            # save the model
+            if if_save_model:
+                print("Saving the model...")
+                svm.save_model(store_path)
+
+            # predict the evaluation data
+            if if_save_pred:
+                print("Predicting the evaluation data...")
+
+                pred = svm.predict(data_loader.eval_features)
+
+                # Save predictions to a CSV file
+                predictions = pd.DataFrame({'ID': range(0, len(pred)),
+                                            'Label': pred})
+                predictions.to_csv(
+                    f"result/result_{time_str}.csv", index=False)
 
     print(f"average train acc: {train_acc / itrs}")
     print(f"average test acc: {test_acc / itrs}")
+
+    train_acc_list.append(train_acc / itrs)
+    test_acc_list.append(test_acc / itrs)
+    file_name_list.append(file_name)
+
+
+if __name__ == '__main__':
+
+    dim_list = [500]
+
+    train_acc_list = []
+    test_acc_list = []
+    file_name_list = []
+
+    for itr in dim_list:
+
+        # get data
+        train_file_path = 'datasets/pca_reduced_all/pca_train_feature_{}.pkl'.format(
+            itr)
+        train_label_file_path = 'datasets/train_labels.npy'
+        eval_file_path = 'datasets/pca_reduced_all/pca_test_feature_{}.pkl'.format(
+            itr)
+
+        # process
+        process(train_file_path, train_label_file_path, eval_file_path,
+                train_acc_list, test_acc_list, file_name_list)

@@ -1,5 +1,6 @@
 import numpy as np
 import pickle
+from sklearn.decomposition import PCA
 
 
 class PCA:
@@ -54,19 +55,37 @@ class PCA:
         return self.transform(X)
 
 
-# Example usage
-if __name__ == "__main__":
-    data = pickle.load(open("datasets/pca_train_feature_500.pkl", "rb"))
+def reduce_data_for_all(train_path, test_path):
 
-    N_list = [100, 500, 1000, 5000]
+    train_data = pickle.load(open(train_path, "rb"))
+    test_data = pickle.load(open(test_path, "rb"))
 
-    for n_components in N_list:
+    train_data = train_data.toarray()
+    test_data = test_data.toarray()
+
+    all_data = np.concatenate((train_data, test_data), axis=0)
+
+    n_components_list = [100, 500, 1000, 5000]
+
+    for n_components in n_components_list:
+        # build pca
         pca = PCA(n_components=n_components)
-        data_reduced = pca.fit_transform(data)
+
+        # fit and transform the data
+        data_reduced = pca.fit_transform(all_data)
 
         # store the PCA reduced data
-        pickle.dump(data_reduced, open(
-            "datasets/pca_test_feature_{}.pkl".format(n_components), "wb"))
+        pickle.dump(data_reduced[:train_data.shape[0]], open(
+            "datasets/pca_reduced_all/pca_train_feature_{}.pkl".format(n_components), "wb"))
+        pickle.dump(data_reduced[train_data.shape[0]:], open(
+            "datasets/pca_reduced_all/pca_test_feature_{}.pkl".format(n_components), "wb"))
 
-        print(f"PCA reduced data shape (n_components={n_components}):",
-              data_reduced.shape)
+        print(f"Data reduced to {n_components} dimensions")
+
+
+# Example usage
+if __name__ == "__main__":
+    train_path = "datasets/train_feature.pkl"
+    test_path = "datasets/test_feature.pkl"
+
+    reduce_data_for_all(train_path, test_path)

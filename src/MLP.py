@@ -41,7 +41,7 @@ class MLP(nn.Module):
         for hidden_dim in hidden_dims:
             layers.append(nn.Linear(input_dim, hidden_dim))
             layers.append(nn.ReLU())
-            layers.append(nn.Dropout(0.5))
+            # layers.append(nn.Dropout(0.5))
             input_dim = hidden_dim
         layers.append(nn.Linear(input_dim, output_dim))
         self.network = nn.Sequential(*layers)
@@ -75,7 +75,6 @@ def train_and_evaluate(model, train_loader, val_loader, eval_loader,
     # *store path
     max_acc = 0
     time_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    time_str = "temp"
     father_dir = "output/MLP"
     file_name = "mlp_model_{}".format(time_str)
     store_path = f"{father_dir}/{file_name}.pth"
@@ -181,7 +180,7 @@ def processing(train_feature_path, train_label_path, eval_feature_path,
 
     # * Define MLP model
     input_dim = train_features.shape[1]
-    hidden_dims = [1024]
+    hidden_dims = [64]
     output_dim = len(np.unique(train_labels))  # Number of classes
 
     model = MLP(input_dim, hidden_dims, output_dim)

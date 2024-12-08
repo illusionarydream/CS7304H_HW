@@ -60,6 +60,13 @@
   - SVM
     - 使用不同的核进行分类: RBF核的效果最好.
   - Logistic Regression
+    - 比较简单, 完全自己实现. One vs Rest LR多分类器
+    - 不同的梯度下降法:
+      - SGD method: 
+      - Newton method:
+    - 不同学习率策略:
+      - warmup+cosine decay
+      - CLR
 
 ### 数据可视化
 

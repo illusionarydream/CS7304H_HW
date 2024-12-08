@@ -112,9 +112,17 @@ class SVM:
 
 # use sklearn SVM
 class SK_SVM:
-    def __init__(self, features, labels, kernel_type: str = "rbf"):
-        self.features = np.asarray(features)
-        self.labels = np.asarray(labels)
+    def __init__(self, features, labels,
+                 kernel_type: str = "rbf",
+                 if_array=False):
+        self.if_array = if_array
+
+        self.features = features
+        self.labels = labels
+        if not if_array:
+            features = np.asarray(features)
+            labels = np.asarray(labels)
+
         self.vector_dim = features.shape[1]
         self.n_samples = features.shape[0]
         self.class_dim = max(labels) + 1
@@ -130,15 +138,17 @@ class SK_SVM:
 
     # * evaluate
     def evaluate(self, features, labels):
-        features = np.asarray(features)
-        labels = np.asarray(labels)
+        if self.if_array:
+            features = np.asarray(features)
+            labels = np.asarray(labels)
 
         pred = self.svm.predict(features)
         return np.mean(pred == labels)
 
     # * predict
     def predict(self, features):
-        features = np.asarray(features)
+        if self.if_array:
+            features = np.asarray(features)
         return self.svm.predict(features)
 
     # * print info
@@ -239,7 +249,7 @@ def process(train_file_path, train_label_file_path, eval_file_path,
 
 if __name__ == '__main__':
 
-    dim_list = [500]
+    dim_list = [10000]
 
     train_acc_list = []
     test_acc_list = []
@@ -248,11 +258,9 @@ if __name__ == '__main__':
     for itr in dim_list:
 
         # get data
-        train_file_path = 'datasets/pca_reduced_all/pca_train_feature_{}.pkl'.format(
-            itr)
+        train_file_path = 'datasets/train_feature.pkl'
         train_label_file_path = 'datasets/train_labels.npy'
-        eval_file_path = 'datasets/pca_reduced_all/pca_test_feature_{}.pkl'.format(
-            itr)
+        eval_file_path = 'datasets/test_feature.pkl'
 
         # process
         process(train_file_path, train_label_file_path, eval_file_path,

@@ -180,7 +180,7 @@ def processing(train_feature_path, train_label_path, eval_feature_path,
 
     # * Define MLP model
     input_dim = train_features.shape[1]
-    hidden_dims = [64]
+    hidden_dims = [1024, 256, 64]
     output_dim = len(np.unique(train_labels))  # Number of classes
 
     model = MLP(input_dim, hidden_dims, output_dim)
@@ -189,7 +189,7 @@ def processing(train_feature_path, train_label_path, eval_feature_path,
 
     # find the best hyperparameters
     train_and_evaluate(model, train_loader, val_loader, eval_loader,
-                       epochs=15, lr=0.001,
+                       epochs=100, lr=0.001,
                        if_save_model=if_save_model,
                        if_predict=if_predict)
 
@@ -202,5 +202,5 @@ if __name__ == "__main__":
     eval_feature_path = "datasets/test_feature.pkl"
 
     processing(train_feature_path, train_label_path, eval_feature_path,
-               if_predict=True,
-               if_save_model=True)
+               if_predict=False,
+               if_save_model=False)

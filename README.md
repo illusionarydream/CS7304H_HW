@@ -52,17 +52,17 @@
       - 5000
       - 1000
     - 使用不同层数的神经网络进行实验: 根据数据, 隐藏层层数越少抗拟合性能越好, 因此采用单层隐藏层即可.
-    - 使用不同宽度的神经网络进行实验: 根据数据, 基本表达能力类似.
-    - 使用dropout: dropout能够一定程度上避免过拟合的发生.
+    - 使用不同宽度的神经网络进行实验: 根据数据, 基本表达能力类似(1024左右较佳)
+    - 使用dropout: dropout能够一定程度上避免过拟合的发生(比较诡异, 差异不明显)
     - 使用self-supervised learning:
       - Naive实现: 质量没有显著提升
-      - MixMatch:
+      - MixMatch: **(?)**
   - SVM
     - 使用不同的核进行分类: RBF核的效果最好.
   - Logistic Regression
     - 比较简单, 完全自己实现. One vs Rest LR多分类器
     - 不同的梯度下降法:
-      - SGD method: 
+      - SGD method:
       - Newton method:
     - 不同学习率策略:
       - warmup+cosine decay

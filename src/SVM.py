@@ -43,8 +43,8 @@ class SVM:
                 self.features, labels)
 
             # store the weights and bias
-            np.save(f"output/weights/weights_{i}.npy", self.weights[i])
-            np.save(f"output/bias/bias_{i}.npy", self.bias[i])
+            # np.save(f"output/weights/weights_{i}.npy", self.weights[i])
+            # np.save(f"output/bias/bias_{i}.npy", self.bias[i])
 
     # * two-class SVM
     def kernel(self, X):
@@ -78,7 +78,7 @@ class SVM:
         b = matrix(0.0)
 
         solution = solvers.qp(
-            P, q, G, h, A, b,  kktsolver='ldl', options={'kktreg': 1e-3})
+            P, q, G, h, A, b,  kktsolver='ldl', options={'kktreg': 1e-3, 'maxiters': 15})
         alphas = np.ravel(solution['x'])
 
         # get the support vectors
@@ -88,6 +88,7 @@ class SVM:
         weights = np.dot(features.T, alphas * labels)
 
         # get the bias
+        # print(labels[sv] - np.dot(features[sv], weights.T).squeeze())
         bias = np.mean(labels[sv] - np.dot(features[sv], weights.T).squeeze())
 
         return weights, bias
@@ -112,7 +113,9 @@ class SVM:
 
 # use sklearn SVM
 class SK_SVM:
-    def __init__(self, features, labels,
+    def __init__(self,
+                 features,
+                 labels,
                  kernel_type: str = "rbf",
                  if_array=False):
         self.if_array = if_array
@@ -139,8 +142,7 @@ class SK_SVM:
     # * evaluate
     def evaluate(self, features, labels):
         if self.if_array:
-            features = np.asarray(features)
-            labels = np.asarray(labels)
+            features = features.todense()
 
         pred = self.svm.predict(features)
         return np.mean(pred == labels)
@@ -148,7 +150,8 @@ class SK_SVM:
     # * predict
     def predict(self, features):
         if self.if_array:
-            features = np.asarray(features)
+            features = features.todense()
+
         return self.svm.predict(features)
 
     # * print info
@@ -172,12 +175,12 @@ class SK_SVM:
         print(f"Model loaded from {file_path}")
 
 
-def process(train_file_path, train_label_file_path, eval_file_path,
-            train_acc_list, test_acc_list, file_name_list,
-            # more parameters
-            itrs=5,
-            if_save_pred=True,
-            if_save_model=True):
+def SK_process(train_file_path, train_label_file_path, eval_file_path,
+               train_acc_list, test_acc_list, file_name_list,
+               # more parameters
+               itrs=5,
+               if_save_pred=True,
+               if_save_model=True):
 
     # data loader
     data_loader = DataLoader(
@@ -195,7 +198,9 @@ def process(train_file_path, train_label_file_path, eval_file_path,
     file_name = "svm_model_{}".format(time_str)
     store_path = f"{father_dir}/{file_name}.pkl"
 
-    svm = SK_SVM(data_loader.train_features, data_loader.train_labels)
+    svm = SK_SVM(data_loader.train_features,
+                 data_loader.train_labels, kernel_type="rbf")
+    # svm = SVM(data_loader.train_features, data_loader.train_labels)
 
     for i in range(itrs):
 
@@ -247,6 +252,37 @@ def process(train_file_path, train_label_file_path, eval_file_path,
     file_name_list.append(file_name)
 
 
+def process(train_file_path, train_label_file_path, eval_file_path):
+
+    # sample usage
+    sample_len = 3000
+
+    # data loader
+    data_loader = DataLoader(
+        train_file_path, train_label_file_path, eval_file_path)
+    data_loader.random_split()
+
+    train_features = data_loader.train_features[:sample_len]
+    train_labels = data_loader.train_labels[:sample_len]
+
+    svm = SVM(train_features,
+              train_labels)
+
+    # train the model
+    svm.one_vs_rest()
+
+    # evaluate the model: train
+    train_acc = svm.evaluate(
+        train_features, train_labels)
+
+    # evaluate the model: test
+    test_acc = svm.evaluate(
+        data_loader.test_features, data_loader.test_labels)
+
+    print(f"average train acc: {train_acc}")
+    print(f"average test acc: {test_acc}")
+
+
 if __name__ == '__main__':
 
     dim_list = [10000]
@@ -258,10 +294,13 @@ if __name__ == '__main__':
     for itr in dim_list:
 
         # get data
-        train_file_path = 'datasets/train_feature.pkl'
+        train_file_path = "datasets/pca_reduced_all/pca_train_feature_100.pkl"
         train_label_file_path = 'datasets/train_labels.npy'
-        eval_file_path = 'datasets/test_feature.pkl'
-
+        eval_file_path = "datasets/pca_reduced_all/pca_test_feature_100.pkl"
         # process
-        process(train_file_path, train_label_file_path, eval_file_path,
-                train_acc_list, test_acc_list, file_name_list)
+        # process(train_file_path, train_label_file_path, eval_file_path,
+        #         train_acc_list, test_acc_list, file_name_list,
+        #         itrs=5,
+        #         if_save_pred=False,
+        #         if_save_model=False)
+        process(train_file_path, train_label_file_path, eval_file_path)

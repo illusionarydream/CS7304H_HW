@@ -41,13 +41,23 @@ class MLP(nn.Module):
         for hidden_dim in hidden_dims:
             layers.append(nn.Linear(input_dim, hidden_dim))
             layers.append(nn.ReLU())
-            # layers.append(nn.Dropout(0.5))
+            layers.append(nn.Dropout(0.5))
             input_dim = hidden_dim
         layers.append(nn.Linear(input_dim, output_dim))
         self.network = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.network(x)
+
+    def half_predict(self, x, layer_index):
+        for i, layer in enumerate(self.network):
+            x = layer(x)
+            if i == layer_index:
+                break
+        # ?debug
+        print(x.shape)
+
+        return x
 
     def save_model(self, path):
         torch.save(self.state_dict(), path)
@@ -152,8 +162,9 @@ def train_and_evaluate(model, train_loader, val_loader, eval_loader,
                     f"result/result_{time_str}.csv", index=False)
                 print(f"Predictions saved to result/result_{time_str}.csv")
 
-
 # * MAIN FUNCTION
+
+
 def processing(train_feature_path, train_label_path, eval_feature_path,
                if_predict=True,
                if_save_model=True):
@@ -180,7 +191,7 @@ def processing(train_feature_path, train_label_path, eval_feature_path,
 
     # * Define MLP model
     input_dim = train_features.shape[1]
-    hidden_dims = [1024, 256, 64]
+    hidden_dims = [1024, 100]
     output_dim = len(np.unique(train_labels))  # Number of classes
 
     model = MLP(input_dim, hidden_dims, output_dim)
@@ -189,9 +200,19 @@ def processing(train_feature_path, train_label_path, eval_feature_path,
 
     # find the best hyperparameters
     train_and_evaluate(model, train_loader, val_loader, eval_loader,
-                       epochs=100, lr=0.001,
+                       epochs=10, lr=0.001,
                        if_save_model=if_save_model,
                        if_predict=if_predict)
+
+    # ? temp use
+    intermediate_layer_index = 4
+    intermediate_output = model.half_predict(
+        train_dataset.features, intermediate_layer_index)
+
+    # save the intermediate output
+    intermediate_output = intermediate_output.detach().numpy()
+    pickle.dump(intermediate_output, open(
+        "datasets/MLP_reduced/MLP_train_feature_100.pkl", 'wb'))
 
 
 # Main function

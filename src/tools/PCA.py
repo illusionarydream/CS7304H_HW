@@ -65,7 +65,7 @@ def reduce_data_for_all(train_path, test_path):
 
     all_data = np.concatenate((train_data, test_data), axis=0)
 
-    n_components_list = [100, 500, 1000, 5000]
+    n_components_list = [200, 2000, 3000, 800]
 
     for n_components in n_components_list:
         # build pca
@@ -76,9 +76,9 @@ def reduce_data_for_all(train_path, test_path):
 
         # store the PCA reduced data
         pickle.dump(data_reduced[:train_data.shape[0]], open(
-            "datasets/pca_reduced_all/pca_train_feature_{}.pkl".format(n_components), "wb"))
+            "datasets/kpca_reduced_all/kpca_train_feature_{}.pkl".format(n_components), "wb"))
         pickle.dump(data_reduced[train_data.shape[0]:], open(
-            "datasets/pca_reduced_all/pca_test_feature_{}.pkl".format(n_components), "wb"))
+            "datasets/kpca_reduced_all/kpca_test_feature_{}.pkl".format(n_components), "wb"))
 
         print(f"Data reduced to {n_components} dimensions")
 
